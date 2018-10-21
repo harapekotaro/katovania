@@ -6,11 +6,15 @@ public class UnityChanController : MonoBehaviour {
 
 	public float moveSpeed = 5;
 	public float jumpForce = 1000;
+	public Transform groundcheck;
+	public float checkRodius;
+	public LayerMask WhatIsGround;
 
 	float InputHorValue;
 
 	bool isGrounded;
 	bool canJump;
+	bool jumpmode;
 
 	public Rigidbody2D cRigidbody2D
 	{
@@ -44,30 +48,40 @@ public class UnityChanController : MonoBehaviour {
 		MecCheck();
 	}
 
+	void FixedUpdate()
+	{
+		Move();
+		Jump();
+	}
 	void InputCheck()
 	{
 		InputHorValue = Input.GetAxisRaw("Horizontal");
-		if(isGrounded && Input.GetButtonDown("Jump")) 
+		if(isGrounded && Input.GetButtonDown("Jump")) {
 			canJump = true;
+			jumpmode = true;
+		}
+		else if(jumpmode && Input.GetButtonUp("Jump")){
+			if(cRigidbody2D.velocity.y > 0){
+				cRigidbody2D.velocity = new Vector2 (cRigidbody2D.velocity.x, cRigidbody2D.velocity.y * 0.5f);
+			}
+			jumpmode = false;
+		}
 	}
 
 	void MecCheck()
 	{
+		isGrounded = Physics2D.OverlapCircle(groundcheck.position, checkRodius, WhatIsGround);
 		bool isRunning = InputHorValue != 0;
 		float velY = cRigidbody2D.velocity.y;
 		bool isJumping = velY > 0.1f ? true:false;
 		bool isFalling = velY < -0.1f ? true:false;
+		if(isFalling) jumpmode = false;
 		cAnimator.SetBool("isRunning",isRunning);
 		cAnimator.SetBool("isJumping",isJumping);
 		cAnimator.SetBool("isFalling",isFalling);
 		cAnimator.SetBool("isGrounded",isGrounded);
 	}
 
-	void FixedUpdate()
-	{
-		Move();
-		Jump();
-	}
 
 	void Move()
 	{
@@ -87,15 +101,9 @@ public class UnityChanController : MonoBehaviour {
 	{
 		if(canJump)
 		{
+			jumpmode = true;
 			canJump = false;
-			isGrounded = false;
 			cRigidbody2D.AddForce(Vector2.up * jumpForce);
 		}
-	}
-
-	void OnCollisionEnter2D(Collision2D col)
-	{
-		if(col.gameObject.tag == "Ground")
-		isGrounded = true;
 	}
 }
